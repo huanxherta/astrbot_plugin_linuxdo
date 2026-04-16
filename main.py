@@ -2,24 +2,15 @@ from curl_cffi.requests import AsyncSession
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api.message_components import Node, Plain
-from pydantic import BaseModel, Field
 import time
 
-# 1. 定义配置类
-class LinuxDoConfig(BaseModel):
-    top_limit: int = Field(default=15, description="每日热帖展示数量 (1-50)", ge=1, le=50)
-    new_limit: int = Field(default=20, description="最新讨论展示数量 (1-50)", ge=1, le=50)
-    search_limit: int = Field(default=10, description="搜索结果展示数量 (1-20)", ge=1, le=20)
-    filter_pinned: bool = Field(default=True, description="是否过滤置顶帖 (Pinned Topics)")
-    show_author: bool = Field(default=True, description="是否在列表中显示最后回帖人")
-
-# 关键：在 @register 装饰器中添加 config_schema 参数
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.3.4", config_schema=LinuxDoConfig)
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.3.5")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         self.base_url = "https://linux.do"
-        # 2. 从上下文获取配置实例
+        # 兼容旧版本：直接从 context 获取配置字典
+        # 如果 WebUI 不显示配置，用户可以手动修改 config.yaml
         self.config = self.context.get_config()
 
     @filter.command("ld_top")
