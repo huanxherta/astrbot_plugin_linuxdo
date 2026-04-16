@@ -4,7 +4,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api.message_components import Node, Plain
 import time
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.2.1")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.2.2")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -12,7 +12,7 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld_top")
     async def get_top_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 全部热门话题 (单一折叠气泡版)'''
+        '''获取 LINUX DO 全部热门话题 (API 修正版)'''
         yield event.plain_result("🔍 正在拉取并打包全部热门话题...")
         
         url = f"{self.base_url}/top.json?period=daily"
@@ -35,7 +35,7 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld_new")
     async def get_latest_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 最新帖子 (单一折叠气泡版)'''
+        '''获取 LINUX DO 最新帖子 (API 修正版)'''
         yield event.plain_result("✨ 正在拉取并打包最新讨论...")
         
         url = f"{self.base_url}/latest.json"
@@ -57,8 +57,9 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld")
     async def search_topics(self, event: AstrMessageEvent):
-        '''搜索 LINUX DO 帖子 (单一折叠气泡版)'''
-        msg = event.get_plain_text().strip()
+        '''搜索 LINUX DO 帖子 (API 修正版)'''
+        # 修正：使用 event.message_str 获取原始消息字符串
+        msg = event.message_str.strip()
         parts = msg.split()
         if len(parts) < 2:
             yield event.plain_result("请输入搜索关键词，例如: /ld 始皇")
@@ -87,16 +88,15 @@ class LinuxDoPlugin(Star):
 
     def _create_single_forward_node(self, event, items, title_prefix):
         '''将所有项打包进单一 Node 节点的工具'''
-        self_id = event.get_self_id()
+        # 修正：使用 event.self_id 获取机器人账号
+        self_id = event.self_id
         try: uin = int(self_id)
         except: uin = 0
         
-        # 构造汇总的长文本
         full_text = f"{title_prefix} (共 {len(items)} 条)\n" + "━" * 15 + "\n\n"
         for i, t in enumerate(items):
             full_text += f"{i+1}. {t.get('title')}\n🔗 {self.base_url}/t/{t.get('id')}\n\n"
         
-        # 仅返回包含一个长文本节点的列表
         return [Node(
             uin=uin,
             name="LINUX DO 助手",
