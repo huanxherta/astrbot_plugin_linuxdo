@@ -4,7 +4,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api.message_components import Node, Plain
 import asyncio
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.5.0")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.5.1")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -13,75 +13,49 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld_top")
     async def get_top_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 热门话题 (支持自动翻页)'''
-        yield event.plain_result("🔍 正在跨页拉取 LINUX DO 热门话题...")
-        
+        '''获取 LINUX DO 热门话题'''
+        yield event.plain_result("🔍 正在拉取 LINUX DO 热门话题...")
         limit = self.config.get("top_limit", 15)
-        # top 接口翻页参数是 page，每页约 30-50 条
         topics = await self._fetch_all_pages(f"{self.base_url}/top.json?period=daily", limit)
-        
         if not topics:
             yield event.plain_result("暂时没有找到热门话题。")
             return
-        
         yield event.chain_result(self._create_single_forward_node(event, topics, "🔥 热门话题"))
 
     @filter.command("ld_new")
     async def get_latest_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 最新帖子 (支持自动翻页)'''
-        yield event.plain_result("✨ 正在跨页拉取 LINUX DO 最新讨论...")
-        
+        '''获取 LINUX DO 最新帖子'''
+        yield event.plain_result("✨ 正在拉取 LINUX DO 最新讨论...")
         limit = self.config.get("new_limit", 30)
-        # latest 接口翻页参数是 page，每页 30 条
         topics = await self._fetch_all_pages(f"{self.base_url}/latest.json", limit)
-        
         if not topics:
             yield event.plain_result("暂时没有找到最新帖子。")
             return
-        
         yield event.chain_result(self._create_single_forward_node(event, topics, "✨ 最新讨论"))
 
     async def _fetch_all_pages(self, base_api_url, limit):
-        '''通用翻页抓取逻辑'''
         all_topics = []
         page = 0
-        
-        # 确定分隔符
         sep = "&" if "?" in base_api_url else "?"
-        
         try:
             async with AsyncSession(impersonate="chrome120") as s:
                 while len(all_topics) < limit:
                     url = f"{base_api_url}{sep}page={page}"
                     resp = await s.get(url, timeout=15)
-                    if resp.status_code != 200:
-                        break
-                        
+                    if resp.status_code != 200: break
                     data = resp.json()
                     topics = data.get('topic_list', {}).get('topics', [])
-                    
-                    if not topics: # 没有更多数据了
-                        break
-                    
-                    # 过滤并添加
+                    if not topics: break
                     filtered = self._filter_topics(topics)
                     all_topics.extend(filtered)
-                    
-                    # 如果这一页经过过滤后已经够了，或者原始数据就很少，停止翻页
-                    if len(all_topics) >= limit or len(topics) < 20:
-                        break
-                        
+                    if len(all_topics) >= limit or len(topics) < 20: break
                     page += 1
-                    # 适当延迟，保护社区服务器
                     await asyncio.sleep(0.5)
-                    
             return all_topics[:limit]
-        except Exception as e:
-            print(f"Fetch Error: {str(e)}")
+        except Exception:
             return all_topics[:limit] if all_topics else []
 
     def _filter_topics(self, topics):
-        '''仅过滤置顶逻辑，不再截取数量（由调用者截取）'''
         filter_pinned = self.config.get("filter_pinned", True)
         filtered = []
         for t in topics:
@@ -91,15 +65,12 @@ class LinuxDoPlugin(Star):
         return filtered
 
     def _create_single_forward_node(self, event, items, title_prefix):
-        '''打包单一 Node 节点'''
         bot_id = getattr(event, 'bot_id', '0')
         try: uin = int(bot_id)
         except: uin = 0
         show_author = self.config.get("show_author", True)
-        
         full_text = f"{title_prefix} (共 {len(items)} 条)\n" + "━" * 15 + "\n\n"
         for i, t in enumerate(items):
             author_info = f" (作者: {t.get('last_poster_username')})" if show_author and t.get('last_poster_username') else ""
             full_text += f"{i+1}. {t.get('title')}{author_info}\n🔗 {self.base_url}/t/{t.get('id')}\n\n"
-            
         return [Node(uin=uin, name="LINUX DO 助手", content=[Plain(full_text.strip())])]
