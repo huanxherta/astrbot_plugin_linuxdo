@@ -1,27 +1,23 @@
-import httpx
+from curl_cffi.requests import AsyncSession
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.0.1")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.0.2")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         self.base_url = "https://linux.do"
-        # 伪装成真实的浏览器，绕过基础的机器人检测
-        self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json"
-        }
 
     @filter.command("ld_top")
     async def get_top_topics(self, event: AstrMessageEvent):
         '''获取 LINUX DO 今日热帖'''
-        yield event.plain_result("🔍 正在拉取 LINUX DO 热门话题...")
+        yield event.plain_result("🔍 正在拉取 LINUX DO 热门话题 (使用加密混淆绕过)...")
         
         url = f"{self.base_url}/top.json?period=daily"
         try:
-            async with httpx.AsyncClient(headers=self.headers) as client:
-                resp = await client.get(url, timeout=10)
+            # 使用 curl_cffi 模拟 Chrome 浏览器的 TLS 指纹
+            async with AsyncSession(impersonate="chrome120") as s:
+                resp = await s.get(url, timeout=15)
                 resp.raise_for_status()
                 data = resp.json()
                 
@@ -39,7 +35,7 @@ class LinuxDoPlugin(Star):
                 
                 yield event.plain_result(result.strip())
         except Exception as e:
-            yield event.plain_result(f"❌ 获取失败: {str(e)}")
+            yield event.plain_result(f"❌ 获取失败: {str(e)}\n提示: 请确保已安装 curl_cffi 依赖。")
 
     @filter.command("ld")
     async def search_topics(self, event: AstrMessageEvent):
@@ -55,9 +51,9 @@ class LinuxDoPlugin(Star):
         
         url = f"{self.base_url}/search.json?q={keyword}"
         try:
-            async with httpx.AsyncClient(headers=self.headers) as client:
-                resp = await client.get(url, timeout=10)
-                resp.raise_for_status() # 确保状态码正常
+            async with AsyncSession(impersonate="chrome120") as s:
+                resp = await s.get(url, timeout=15)
+                resp.raise_for_status()
                 data = resp.json()
                 
                 posts = data.get('posts', [])[:5]

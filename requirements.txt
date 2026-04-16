@@ -1,1 +1,1 @@
-httpx
+curl_cffi
