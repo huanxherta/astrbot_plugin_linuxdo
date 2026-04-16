@@ -1,7 +1,7 @@
 name: astrbot_plugin_linuxdo
 display_name: LINUX DO 社区助手
-description: 获取 LINUX DO 社区热帖、活跃讨论及最新话题。
-version: 1.6.1
+description: 获取 LINUX DO 社区热帖、活跃讨论及最新话题。支持大批量数据抓取。
+version: 1.7.0
 author: GeminiCLI
 astrbot_version: ">=4.16"
 repo: https://github.com/huanxherta/astrbot_plugin_linuxdo
@@ -14,16 +14,16 @@ configurable: true
 config_items:
   - name: top_limit
     type: number
-    description: 每日热帖数量
-    default: 15
+    description: 每日热帖数量 (建议 30-100)
+    default: 30
   - name: new_limit
     type: number
-    description: 最近活跃数量
-    default: 30
+    description: 最近活跃数量 (建议 60-150)
+    default: 60
   - name: fresh_limit
     type: number
-    description: 最新发布数量
-    default: 20
+    description: 最新发布数量 (建议 60-150)
+    default: 60
   - name: filter_pinned
     type: boolean
     description: 过滤置顶帖
