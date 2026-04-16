@@ -1,6 +1,7 @@
 # 默认展示设置
 top_limit: 15
-new_limit: 20
+new_limit: 30
+fresh_limit: 20
 
 # 逻辑控制
 filter_pinned: true # 是否过滤置顶帖

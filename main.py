@@ -4,7 +4,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api.message_components import Node, Plain
 import asyncio
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.5.1")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.6.0")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -23,15 +23,27 @@ class LinuxDoPlugin(Star):
         yield event.chain_result(self._create_single_forward_node(event, topics, "🔥 热门话题"))
 
     @filter.command("ld_new")
-    async def get_latest_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 最新帖子'''
-        yield event.plain_result("✨ 正在拉取 LINUX DO 最新讨论...")
+    async def get_latest_activity(self, event: AstrMessageEvent):
+        '''获取 LINUX DO 最近活跃话题 (含新评论)'''
+        yield event.plain_result("✨ 正在拉取 LINUX DO 最近活跃讨论...")
         limit = self.config.get("new_limit", 30)
         topics = await self._fetch_all_pages(f"{self.base_url}/latest.json", limit)
         if not topics:
-            yield event.plain_result("暂时没有找到最新帖子。")
+            yield event.plain_result("暂时没有找到讨论。")
             return
-        yield event.chain_result(self._create_single_forward_node(event, topics, "✨ 最新讨论"))
+        yield event.chain_result(self._create_single_forward_node(event, topics, "✨ 最近活跃"))
+
+    @filter.command("ld_fresh")
+    async def get_fresh_topics(self, event: AstrMessageEvent):
+        '''获取 LINUX DO 最新创建的话题 (不含旧帖评论)'''
+        yield event.plain_result("🆕 正在拉取 LINUX DO 刚刚发布的新帖...")
+        limit = self.config.get("fresh_limit", 20)
+        # 使用 order=created 确保是按发布时间排序
+        topics = await self._fetch_all_pages(f"{self.base_url}/latest.json?order=created", limit)
+        if not topics:
+            yield event.plain_result("暂时没有找到新发布的帖子。")
+            return
+        yield event.chain_result(self._create_single_forward_node(event, topics, "🆕 最新发布"))
 
     async def _fetch_all_pages(self, base_api_url, limit):
         all_topics = []
