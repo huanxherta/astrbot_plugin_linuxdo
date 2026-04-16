@@ -1,7 +1,7 @@
 name: astrbot_plugin_linuxdo
 display_name: LINUX DO 社区助手
-description: 获取 linux.do 社区的热帖和最新讨论内容。
-version: 1.4.0
+description: 获取 linux.do 社区的热帖和最新讨论内容。支持自动翻页获取海量数据。
+version: 1.5.0
 author: GeminiCLI
 astrbot_version: ">=4.16"
 repo: https://github.com/huanxherta/astrbot_plugin_linuxdo
@@ -13,12 +13,12 @@ support_platforms:
 config_schema:
   top_limit:
     type: int
-    description: 每日热帖展示数量
+    description: 每日热帖展示数量 (上限 100)
     default: 15
   new_limit:
     type: int
-    description: 最新讨论展示数量
-    default: 20
+    description: 最新讨论展示数量 (上限 100)
+    default: 30
   filter_pinned:
     type: bool
     description: 是否过滤置顶帖
