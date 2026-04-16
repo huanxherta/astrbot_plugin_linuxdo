@@ -1,10 +1,9 @@
 from curl_cffi.requests import AsyncSession
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
-import astrbot.api.message_components as Comp
-import time
+from astrbot.api.message_components import Node, Plain
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.0.8")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.0.9")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -12,7 +11,7 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld_top")
     async def get_top_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 今日热帖 (轻量化折叠版)'''
+        '''获取 LINUX DO 今日热帖 (官方标准转发版)'''
         yield event.plain_result("🔍 正在拉取并打包热门话题...")
         
         url = f"{self.base_url}/top.json?period=daily"
@@ -27,37 +26,35 @@ class LinuxDoPlugin(Star):
                     yield event.plain_result("暂时没有找到热门话题。")
                     return
                 
-                # 将所有内容拼接成一段长文本，放入单个节点中
+                # 按照文档构造 Node 列表
+                nodes = []
+                self_id = event.get_self_id()
+                try:
+                    uin = int(self_id)
+                except:
+                    uin = 0
+                
+                # 构造所有话题内容
                 full_content = "🔥 LINUX DO 今日热榜 (Top 15)\n" + "━" * 15 + "\n\n"
                 for i, t in enumerate(topics):
                     full_content += f"{i+1}. {t.get('title')}\n🔗 {self.base_url}/t/{t.get('id')}\n\n"
                 
-                now = int(time.time())
-                # 只构造一个节点，极大减轻适配器压力，防止超时
-                single_node = Comp.Node(
-                    id=now,
+                # 创建官方标准的 Node
+                nodes.append(Node(
+                    uin=uin,
                     name="LINUX DO 助手",
-                    uin=event.get_self_id(),
-                    content=[Comp.Plain(full_content.strip())]
-                )
+                    content=[Plain(full_content.strip())]
+                ))
                 
-                try:
-                    yield event.chain_result([
-                        Comp.Forward(
-                            id=now + 1,
-                            nodes=[single_node]
-                        )
-                    ])
-                except Exception:
-                    # 如果折叠消息还是发不出，直接发送文本
-                    yield event.plain_result(full_content.strip())
+                # 直接 yield Node 列表即可实现合并转发
+                yield event.chain_result(nodes)
                 
         except Exception as e:
             yield event.plain_result(f"❌ 获取失败: {str(e)}")
 
     @filter.command("ld")
     async def search_topics(self, event: AstrMessageEvent):
-        '''搜索 LINUX DO 帖子 (轻量化折叠版)'''
+        '''搜索 LINUX DO 帖子 (官方标准转发版)'''
         msg = event.get_plain_text().strip()
         parts = msg.split()
         if len(parts) < 2:
@@ -83,23 +80,13 @@ class LinuxDoPlugin(Star):
                 for i, p in enumerate(posts):
                     full_content += f"{i+1}. {p.get('topic_title')}\n🔗 {self.base_url}/t/{p.get('topic_id')}\n\n"
                 
-                now = int(time.time())
-                single_node = Comp.Node(
-                    id=now,
-                    name="LINUX DO 搜索",
+                nodes = [Node(
                     uin=event.get_self_id(),
-                    content=[Comp.Plain(full_content.strip())]
-                )
+                    name="LINUX DO 搜索",
+                    content=[Plain(full_content.strip())]
+                )]
                 
-                try:
-                    yield event.chain_result([
-                        Comp.Forward(
-                            id=now + 1,
-                            nodes=[single_node]
-                        )
-                    ])
-                except Exception:
-                    yield event.plain_result(full_content.strip())
+                yield event.chain_result(nodes)
 
         except Exception as e:
             yield event.plain_result(f"❌ 搜索出错: {str(e)}")
