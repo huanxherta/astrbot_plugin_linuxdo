@@ -1,0 +1,32 @@
+{
+  "top_limit": {
+    "description": "每日热帖展示数量",
+    "type": "int",
+    "hint": "1-100，建议 30",
+    "default": 30
+  },
+  "new_limit": {
+    "description": "最近活跃展示数量",
+    "type": "int",
+    "hint": "1-150，建议 60",
+    "default": 60
+  },
+  "fresh_limit": {
+    "description": "最新发布展示数量",
+    "type": "int",
+    "hint": "1-150，建议 60",
+    "default": 60
+  },
+  "filter_pinned": {
+    "description": "是否过滤置顶帖",
+    "type": "bool",
+    "hint": "开启后将隐藏社区固定的通知贴",
+    "default": true
+  },
+  "show_author": {
+    "description": "是否显示最后回帖人",
+    "type": "bool",
+    "hint": "在标题后标注回帖者昵称",
+    "default": true
+  }
+}
