@@ -5,7 +5,7 @@ from astrbot.api.message_components import Node, Plain
 import asyncio
 import time
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手", "1.7.3")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手", "1.7.4")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -66,34 +66,25 @@ class LinuxDoPlugin(Star):
             return all_topics[:limit] if all_topics else []
 
     def _create_forward_nodes(self, event, items, title_prefix):
-        '''正统多节点模式：尝试在一个气泡里显示多个人的消息'''
+        '''每 60 个话题打包成一个 Node，解决字数上限问题'''
         nodes = []
         bot_id = getattr(event, 'bot_id', '0')
         try: uin = int(bot_id)
         except: uin = 0
         show_author = self.config.get("show_author", True)
         
-        # 将总数切分为三个主要角色
-        identities = [
-            {"name": "LINUX DO 助手", "uin": uin},
-            {"name": "社区情报员", "uin": 10001},
-            {"name": "热点播报员", "uin": 10002}
-        ]
-        
-        chunk_size = max(1, len(items) // 3 + 1)
+        chunk_size = 60 
         for i in range(0, len(items), chunk_size):
             chunk = items[i:i+chunk_size]
-            identity = identities[min(i // chunk_size, 2)]
-            
-            full_text = f"{title_prefix} (第 {i+1}-{i+len(chunk)} 条)\n" + "━" * 15 + "\n\n"
+            full_text = f"{title_prefix} (第 {i+1}-{i+len(chunk)} 条 / 共 {len(items)} 条)\n" + "━" * 15 + "\n\n"
             for j, t in enumerate(chunk):
                 idx = i + j + 1
                 author_info = f" (作者: {t.get('last_poster_username')})" if show_author and t.get('last_poster_username') else ""
                 full_text += f"{idx}. {t.get('title')}{author_info}\n🔗 {self.base_url}/t/{t.get('id')}\n\n"
             
             nodes.append(Node(
-                uin=identity["uin"], 
-                name=identity["name"], 
+                uin=uin, 
+                name="LINUX DO 助手", 
                 content=[Plain(full_text.strip())]
             ))
         return nodes
