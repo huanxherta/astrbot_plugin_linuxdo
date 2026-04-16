@@ -3,9 +3,8 @@ from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 import astrbot.api.message_components as Comp
 import time
-import uuid
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.0.5")
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.0.6")
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -13,7 +12,7 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld_top")
     async def get_top_topics(self, event: AstrMessageEvent):
-        '''获取 LINUX DO 今日热帖 (优化合并转发)'''
+        '''获取 LINUX DO 今日热帖 (修正 ID 类型版)'''
         yield event.plain_result("🔍 正在拉取 LINUX DO 热门话题...")
         
         url = f"{self.base_url}/top.json?period=daily"
@@ -30,36 +29,40 @@ class LinuxDoPlugin(Star):
                 
                 nodes = []
                 self_id = event.get_self_id()
+                # 确保 self_id 是整数，如果不是则尝试转换或设为 0
+                try:
+                    uin = int(self_id)
+                except:
+                    uin = 0
                 
+                now = int(time.time())
                 for i, t in enumerate(topics):
                     title = t.get('title')
                     t_id = t.get('id')
                     author = t.get('last_poster_username', '社区成员')
                     link = f"{self.base_url}/t/{t_id}"
                     
-                    # 紧凑格式：1. 标题 - @作者
                     content = f"{i+1}. {title} - @{author}\n🔗 {link}"
                     
                     nodes.append(Comp.Node(
-                        id=str(uuid.uuid4()), # 使用 UUID 确保唯一性
+                        id=now + i, # 必须是整数
                         name="LINUX DO 热帖",
-                        uin=self_id,
+                        uin=uin,
                         content=[Comp.Plain(content)]
                     ))
                 
                 try:
-                    # 修复关键：为 Forward 组件本身添加 id
+                    # 为 Forward 和 Node 提供整数 ID
                     yield event.chain_result([
                         Comp.Forward(
-                            id=str(uuid.uuid4()), 
+                            id=now, 
                             nodes=nodes
                         )
                     ])
-                except Exception:
-                    # 如果合并转发失败（如平台不支持），发送极致压缩的文本
+                except Exception as e:
+                    # 备选方案
                     result = "🔥 LINUX DO 今日热榜 (Top 15)\n" + "-"*20 + "\n"
                     for i, t in enumerate(topics):
-                        # 一帖一行链接模式，极大缩小长度
                         result += f"{i+1}. {t.get('title')} ({self.base_url}/t/{t.get('id')})\n"
                     yield event.plain_result(result.strip())
                 
@@ -68,7 +71,7 @@ class LinuxDoPlugin(Star):
 
     @filter.command("ld")
     async def search_topics(self, event: AstrMessageEvent):
-        '''搜索 LINUX DO 帖子 (优化展示)'''
+        '''搜索 LINUX DO 帖子 (修正 ID 类型版)'''
         msg = event.get_plain_text().strip()
         parts = msg.split()
         if len(parts) < 2:
@@ -92,6 +95,12 @@ class LinuxDoPlugin(Star):
                 
                 nodes = []
                 self_id = event.get_self_id()
+                try:
+                    uin = int(self_id)
+                except:
+                    uin = 0
+                    
+                now = int(time.time())
                 for i, p in enumerate(posts):
                     title = p.get('topic_title', '无标题')
                     t_id = p.get('topic_id')
@@ -100,16 +109,16 @@ class LinuxDoPlugin(Star):
                     content = f"📌 {title}\n🔗 {link}"
                     
                     nodes.append(Comp.Node(
-                        id=str(uuid.uuid4()),
+                        id=now + i,
                         name="LINUX DO 搜索",
-                        uin=self_id,
+                        uin=uin,
                         content=[Comp.Plain(content)]
                     ))
                 
                 try:
                     yield event.chain_result([
                         Comp.Forward(
-                            id=str(uuid.uuid4()),
+                            id=now,
                             nodes=nodes
                         )
                     ])
