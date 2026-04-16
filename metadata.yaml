@@ -1,10 +1,10 @@
 name: astrbot_plugin_linuxdo
 display_name: LINUX DO 社区助手
 description: 获取 linux.do 社区的热帖和搜索内容。
-version: 1.0.0
+version: 1.0.6
 author: GeminiCLI
 astrbot_version: ">=4.16"
-repo: https://github.com/huanx/astrbot_plugin_linuxdo
+repo: https://github.com/huanxherta/astrbot_plugin_linuxdo
 support_platforms:
   - telegram
   - discord
