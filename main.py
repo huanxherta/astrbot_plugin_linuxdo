@@ -13,13 +13,14 @@ class LinuxDoConfig(BaseModel):
     filter_pinned: bool = Field(default=True, description="是否过滤置顶帖 (Pinned Topics)")
     show_author: bool = Field(default=True, description="是否在列表中显示最后回帖人")
 
-@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.3.3")
+# 关键：在 @register 装饰器中添加 config_schema 参数
+@register("linuxdo", "GeminiCLI", "LINUX DO 社区助手插件", "1.3.4", config_schema=LinuxDoConfig)
 class LinuxDoPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         self.base_url = "https://linux.do"
-        # 2. 加载配置
-        self.config = self.context.get_config().get("linuxdo", {})
+        # 2. 从上下文获取配置实例
+        self.config = self.context.get_config()
 
     @filter.command("ld_top")
     async def get_top_topics(self, event: AstrMessageEvent):
